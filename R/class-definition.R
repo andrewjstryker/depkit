@@ -65,6 +65,17 @@ setClass(
   }
 )
 
+setMethod(
+  "initialize",
+  "DependencyManager",
+  function(.Object, registry = list(), ...) {
+    .Object <- callNextMethod(.Object, registry = registry, ...)
+    validObject(.Object)
+    .Object
+  }
+)
+
+
 #' Construct a DependencyManager Instance
 #'
 #' Initializes a new DependencyManager. Additional details on the behavior,
@@ -82,7 +93,5 @@ setClass(
 #' @export
 DependencyManager <- # nolint
   function(registry = list()) {
-    new("DependencyManager",
-      registry = registry
-    )
+    new("DependencyManager", registry = registry)
   }
