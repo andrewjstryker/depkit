@@ -44,6 +44,11 @@ setClass(
   validity = function(object) {
     reg <- object@registry
 
+    # allow empty registry
+    if (length(reg) == 0) {
+      return(TRUE)
+    }
+
     nm <- names(reg)
     if (is.null(nm) || any(nm == "")) {
       return("All registry entries must be named and non-empty.")
@@ -54,7 +59,7 @@ setClass(
     }
 
     not_html <-
-      !vapply(reg, function(x) inherits(x, "htmlDependency"), logical(1))
+      !vapply(reg, function(x) inherits(x, "html_dependency"), logical(1))
     if (any(not_html)) {
       return(sprintf(
         "Registry contains non-htmlDependency values: %s",
@@ -87,11 +92,14 @@ setMethod(
 #'
 #' @return An object of class \code{DependencyManager}.
 #'
-#' @describedIn DependencyManager Dependency Manager for htmlwidget - see the
+#' @describeIn DependencyManager Dependency Manager for htmlwidget - see the
 #'   class documentation for a full description.
 #'
 #' @export
 DependencyManager <- # nolint
-  function(registry = list()) {
-    new("DependencyManager", registry = registry)
+  function(...) {
+    insert(
+      new("DependencyManager"),
+      list(...)
+    )
   }
