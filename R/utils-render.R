@@ -152,3 +152,17 @@ format_css_tags <-
     )
     sprintf('<link %s/>', paste(attrs, collapse = " "))
   }
+
+#' Locate a dependency on the first available CDN base
+#'
+#' @param files Character vector of file names (usually `dep$script`).
+#' @param cdn_bases Character vector of CDN base URLs (may be empty).
+#' @return Character vector, same length as `files`, containing the CDN URL
+#'   or `NA_character_` if no CDN base was provided.
+locate_dependency_cdn <- function(files, cdn_bases = character()) {
+  if (length(cdn_bases) == 0L)
+    return(rep(NA_character_, length(files)))
+
+  paste0(rtrim_slash(cdn_bases[[1]]), "/", basename(files))
+}
+

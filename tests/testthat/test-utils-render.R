@@ -101,3 +101,36 @@ test_that("format_css_tags returns a single <link> with rel, href, integrity", {
   expect_equal(tag,
                '<link rel="stylesheet" href="styles.css" integrity="sha256-DDD"/>')
 })
+
+test_that("locate_dependency_cdn returns NA when no CDN bases supplied", {
+  files <- c("foo.js", "bar.css")
+  expect_equal(
+    locate_dependency_cdn(files, cdn_bases = character()),
+    rep(NA_character_, length(files))
+  )
+})
+
+test_that("locate_dependency_cdn builds URLs from first CDN base", {
+  files <- c("/path/to/a.js", "subdir/b.css")
+  base1 <- "https://cdn.example.org/assets"
+  base2 <- "https://other.cdn/"
+  out <- locate_dependency_cdn(files, cdn_bases = c(base1, base2))
+
+  expect_equal(
+    out,
+    c(
+      "https://cdn.example.org/assets/a.js",
+      "https://cdn.example.org/assets/b.css"
+    )
+  )
+})
+
+test_that("locate_dependency_cdn trims trailing slash on CDN base", {
+  file <- "script.min.js"
+  base_with_slash <- "https://cdn.example.org/lib/"
+  expect_equal(
+    locate_dependency_cdn(file, cdn_bases = base_with_slash),
+    "https://cdn.example.org/lib/script.min.js"
+  )
+})
+
