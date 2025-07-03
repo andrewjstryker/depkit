@@ -14,8 +14,8 @@
       )
 
     # 1) arrange local assets
-    css_local <- copy_dependency_assets(dep$stylesheet, opts$local_css_path)
-    js_local <- copy_dependency_assets(dep$script, opts$local_js_path)
+    css_local <- copy_dependency_asset(dep$stylesheet, opts$local_css_path)
+    js_local <- copy_dependency_asset(dep$script, opts$local_js_path)
 
     # 2) locate CDN assets
     js_cdn <- locate_dependency_cdn(dep$script, opts$cdns)
