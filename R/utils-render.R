@@ -1,13 +1,35 @@
 
+#------------------------------------------------------------------------------#
+#
+# General utilities
+#
+# Consider moving these to their own file should the number of utilities grow.
+#
+#------------------------------------------------------------------------------#
+
 #' Remove trailing slashes from a URL
+#'
 #' @param x Character vector of URLs
 #' @return Character vector with no trailing slash
+#'
+#' @keywords internal
 rtrim_slash <- function(x) {
   sub("/+$", "", x)
 }
 
-# Utility: coalesce NULL
+#' Coalesce NULL
+#'
+#' @param a object that can be null
+#' @param b object that replaces `a` should a be `NULL`
+#'
+#' @keywords internal
 `%||%` <- function(a, b) if (!is.null(a)) a else b
+
+#------------------------------------------------------------------------------#
+#
+# Cryptographic utilities
+#
+#------------------------------------------------------------------------------#
 
 #' Compute Subresource Integrity (SRI) hash for a local file
 #'
@@ -166,3 +188,45 @@ locate_dependency_cdn <- function(files, cdn_bases = character()) {
   paste0(rtrim_slash(cdn_bases[[1]]), "/", basename(files))
 }
 
+
+#' Internal helper: copy assets, locate CDN, format tags, and emit HTML
+#'
+#' Called by the S4 render() methods; **not** exported.
+#' @keywords internal
+#' @noRd
+render_html_dependency <-
+function(dm, dep, ...) {
+  opts <-
+    modifyList(
+      list(
+        cdns = getOption("widgetman.cdns"),
+        local_js_path = getOption("widgetman.local_js_path"),
+        local_css_path = getOption("widgetman.local_css_path"),
+        timeout = getOption("widgetman.timeout")
+      ),
+      list(...),
+    )
+
+  # 1) arrange local assets
+  css_local <- copy_dependency_asset(dep$stylesheet, opts$local_css_path)
+  js_local <- copy_dependency_asset(dep$script, opts$local_js_path)
+
+  # 2) locate CDN assets
+  js_cdn <- locate_dependency_cdn(dep$script, opts$cdns)
+
+  # 3) format HTML tags
+  tags <-
+    c(
+      format_css_tags(dep$stylesheet, opts$local_css_path),
+      format_js_tags(
+        dep$script,
+        opts$local_js_path,
+        js_cdn,
+        opts$timeout
+      )
+    )
+
+  # 4) return HTML tags
+  cat(tags, sep = "\n")
+  invisible(tags)
+}

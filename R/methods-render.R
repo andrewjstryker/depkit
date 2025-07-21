@@ -1,41 +1,5 @@
 
 
-.render_html_dependency <-
-  function(dm, dep, ...) {
-    opts <-
-      modifyList(
-        list(
-          cdns = getOption("widgetman.cdns"),
-          local_js_path = getOption("widgetman.local_js_path"),
-          local_css_path = getOption("widgetman.local_css_path"),
-          timeout = getOption("widgetman.timeout")
-        ),
-        list(...),
-      )
-
-    # 1) arrange local assets
-    css_local <- copy_dependency_asset(dep$stylesheet, opts$local_css_path)
-    js_local <- copy_dependency_asset(dep$script, opts$local_js_path)
-
-    # 2) locate CDN assets
-    js_cdn <- locate_dependency_cdn(dep$script, opts$cdns)
-
-    # 3) format HTML tags
-    tags <-
-      c(
-        format_css_tags(dep$stylesheet, opts$local_css_path),
-        format_js_tags(
-          dep$script,
-          opts$local_js_path,
-          js_cdn,
-          opts$timeout
-        )
-      )
-
-    # 4) return HTML tags
-    cat(tags, sep = "\n")
-    invisible(tags)
-  }
 
 #' Render a single html_dependency
 #'
