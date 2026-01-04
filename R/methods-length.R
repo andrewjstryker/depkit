@@ -1,3 +1,6 @@
+#' @include class-definition.R generics.R
+NULL
+
 #' Length method for DependencyManager
 #'
 #' Returns the number of dependencies currently recorded in a

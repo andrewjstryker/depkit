@@ -1,41 +1,31 @@
-#' Construct a dependency registry key
-#'
-#' Internal helper function that generates a unique key for a dependency
-#' by concatenating its name and version.
-#'
-#' @param dep A list-like dependency object with elements \code{name}
-#'   (character) and \code{version} (character), for example an
-#'   \code{htmltools::htmlDependency} object.
-#' @return A single-element character vector in the format
-#'   \code{"<name>@<version>"}.
-#' @keywords internal
-#' @rdname key-utils
-#'
-dep_key <- function(dep) {
+#' @include utils.R
+NULL
+
+make_dep_key <- function(dep) {
+  if (!inherits(dep, "html_dependency")) {
+    stop("Expected html_dependency", call. = FALSE)
+  }
+  if (is.null(dep$name) || is.null(dep$version)) {
+    stop("Dependency must have name and version", call. = FALSE)
+  }
+  assert_scalar_character(dep$name, "dep$name")
+  assert_scalar_character(dep$version, "dep$version")
   paste0(dep$name, "@", dep$version)
 }
 
-#' Parse components from a dependency registry key
-#'
-#' Internal helper that splits a registry key string into its name and version
-#'   parts.
-#'
-#' @param key A single-element character string in the format
-#'   \code{"<name>@<version>"}.
-#' @return A named list with two elements:
-#'   \item{name}{Character string before the '@'.}
-#'   \item{version}{Character string after the '@'.}
-#' @keywords internal
-#' @rdname key-utils
-#' @details
-#' If \code{key} does not contain exactly one '@' separator, the function will
-#' terminate with an error message \code{"Invalid key format. Expected
-#' 'name@version'"}.
-#'
-key_components <- function(key) {
-  parts <- strsplit(key, "@")[[1]]
-  if (length(parts) != 2) {
-    stop("Invalid key format. Expected 'name@version'.")
+make_asset_id <- function(dep_key, rel_path) {
+  assert_scalar_character(dep_key, "dep_key")
+  if (!is.character(rel_path) || any(is.na(rel_path))) {
+    stop("rel_path must be a non-missing character vector", call. = FALSE)
   }
-  list(name = parts[1], version = parts[2])
+  paste0(dep_key, "::", rel_path)
+}
+
+parse_asset_id <- function(asset_id) {
+  assert_scalar_character(asset_id, "asset_id")
+  parts <- strsplit(asset_id, "::", fixed = TRUE)[[1]]
+  if (length(parts) != 2 || !nzchar(parts[1]) || !nzchar(parts[2])) {
+    stop("Invalid asset_id format; expected '<dep_key>::<rel_path>'", call. = FALSE)
+  }
+  list(dep_key = parts[1], rel_path = parts[2])
 }

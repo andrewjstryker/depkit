@@ -1,6 +1,8 @@
+#' @include class-definition.R generics.R
+NULL
 
 #' Show a summary of the DependencyManager
-#'
+#' 
 #' @description
 #' \code{show()} displays a concise, human-readable summary of the
 #' \code{DependencyManager}, including the total count of dependencies and their

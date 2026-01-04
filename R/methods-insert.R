@@ -1,90 +1,106 @@
-#' Insert htmlwidget dependencies (helper)
-#'
-#' This is an internal function that does the real work for
-#' \code{\link{insert,DependencyManager,htmlwidget-method}}.
-#'
-#' @param dm   A \code{DependencyManager} object.
-#' @param dep  An \code{htmlwidget} object.
-#' @return     A \code{DependencyManager} with the widget’s
-#'             dependencies registered.
-#' @keywords internal
-.insert_htmlwidget <-
-  function(dm, dep) {
-    Reduce(
-      function(acc, item) insert(acc, item),
-      htmltools::htmlDependencies(dep),
-      init = dm
-    )
-  }
+#' @include class-definition.R generics.R utils-assets.R
+NULL
 
-#' Insert htmldependency dependencies (helper)
-#'
-#' This is an internal function that does the real work for
-#' \code{\link{insert,DependencyManager,htmldependency-method}}.
-#'
-#' @param dm   A \code{DependencyManager} object.
-#' @param w    An \code{htmldependency} object.
-#' @return     A \code{DependencyManager} with the
-#'             dependencies registered.
-#' @keywords internal
-.insert_html_dependency <-
-  function(dm, dep) {
-    key <- dep_key(dep)
-    if (has(dm, key)) {
-      dm
-    } else {
-      # do not use the constructor as the constructor uses insert() which will
-      # call this function again, leading to infinite recursion
-      new(
-        "DependencyManager",
-        registry = c(dm@registry, stats::setNames(list(dep), key))
-      )
+normalize_insert_input <- function(x) {
+  if (inherits(x, "html_dependency")) {
+    return(list(x))
+  }
+  if (inherits(x, "htmlwidget")) {
+    return(htmltools::htmlDependencies(x))
+  }
+  if (is.list(x)) {
+    out <- list()
+    for (item in x) {
+      out <- c(out, normalize_insert_input(item))
+    }
+    return(out)
+  }
+  stop("Unsupported dependency type: ", class(x)[1], call. = FALSE)
+}
+
+append_assets <- function(dm, css_ids, js_ids, registry) {
+  css_res <- append_unique_ordered(dm@css_assets, css_ids)
+  js_res <- append_unique_ordered(dm@js_assets, js_ids)
+
+  new_dm <- new(
+    "DependencyManager",
+    registry = registry,
+    css_assets = css_res$updated,
+    js_assets = js_res$updated,
+    config = dm@config
+  )
+
+  list(
+    dm = new_dm,
+    added_css = css_res$added,
+    added_js = js_res$added
+  )
+}
+
+insert_dependency <- function(dm, dep) {
+  info <- collect_asset_ids(dep)
+  registry <- dm@registry
+  if (!has(dm, info$dep_key)) {
+    registry[[info$dep_key]] <- dep
+  }
+  append_assets(dm, info$css_ids, info$js_ids, registry)
+}
+
+insert_many <- function(dm, deps) {
+  css_candidates <- character()
+  js_candidates <- character()
+  registry <- dm@registry
+
+  for (dep in deps) {
+    info <- collect_asset_ids(dep)
+    css_candidates <- c(css_candidates, info$css_ids)
+    js_candidates <- c(js_candidates, info$js_ids)
+    if (!(info$dep_key %in% names(registry))) {
+      registry[[info$dep_key]] <- dep
     }
   }
 
-#' @describeIn insert Method for inserting a character vector of dependencies
-#' @exportMethod insert
+  css_candidates <- ordered_unique(css_candidates)
+  js_candidates <- ordered_unique(js_candidates)
+
+  append_assets(dm, css_candidates, js_candidates, registry)
+}
+
+insert_impl <- function(dm, dep) {
+  assert_config_paths(dm@config)
+  deps <- normalize_insert_input(dep)
+  res <- insert_many(dm, deps)
+
+  if (length(res$added_css)) {
+    copy_assets_for_ids(res$dm, res$added_css, "css")
+  }
+  if (length(res$added_js)) {
+    copy_assets_for_ids(res$dm, res$added_js, "js")
+  }
+
+  InsertUpdate(res$dm, added_css = res$added_css, added_js = res$added_js)
+}
+
 setMethod(
   "insert",
   signature(dm = "DependencyManager", dep = "html_dependency"),
-  .insert_html_dependency
+  insert_impl
 )
 
-#' @describeIn insert Method for inserting a widget with one or more
-#'   dependencies
-#' @exportMethod insert
 setMethod(
   "insert",
   signature(dm = "DependencyManager", dep = "htmlwidget"),
-  .insert_htmlwidget
+  insert_impl
 )
 
-#' @describeIn insert Method for inserting a list of html_dependency objects
-#' @exportMethod insert
 setMethod(
   "insert",
   signature(dm = "DependencyManager", dep = "list"),
-  function(dm, dep) {
-    Reduce(
-      function(acc, item) insert(acc, item),
-      dep,
-      init = dm
-    )
-  }
+  insert_impl
 )
 
-#' @describeIn insert  catch-all for any dep
-#' @exportMethod insert
 setMethod(
   "insert",
   signature(dm = "DependencyManager", dep = "ANY"),
-  function(dm, dep) {
-    if (inherits(dep, "htmlwidget")) {
-      .insert_htmlwidget(dm, dep)
-    } else if (inherits(dep, "html_dependency")) {
-      .insert_html_dependency(dm, dep)
-    } else {
-      stop("No insert() method for objects of class “", class(dep)[1], "”")
-    }
-  }
+  function(dm, dep) insert_impl(dm, dep)
 )

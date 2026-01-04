@@ -1,3 +1,6 @@
+#' @include class-definition.R generics.R
+NULL
+
 #' Names method for DependencyManager
 #'
 #' Returns the names of the dependencies currently recorded in a
@@ -38,7 +41,19 @@ setReplaceMethod(
         "of the same length as the registry"
       )
     }
-    names(x@registry) <- value
-    x
+    if (length(x@registry) == 0L) {
+      return(x)
+    }
+
+    reg <- x@registry
+    names(reg) <- value
+
+    new(
+      "DependencyManager",
+      registry = reg,
+      css_assets = x@css_assets,
+      js_assets = x@js_assets,
+      config = x@config
+    )
   }
 )
