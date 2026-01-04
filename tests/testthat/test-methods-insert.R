@@ -1,38 +1,39 @@
-test_that("insert(htmlDependency) adds exactly once", {
-  dep <- htmltools::htmlDependency("lib", "2.0", src="")
-  dm0 <- DependencyManager()
-  dm1 <- insert(dm0, dep)
-  dm2 <- insert(dm1, dep)
-  expect_length(dm1, 1)
-  expect_identical(dm2, dm1)  # idempotent
+test_that("insert(html_dependency) is idempotent and returns InsertUpdate", {
+  dep <- tmp_dependency(name = "lib", version = "2.0", js = "a.js")
+  dm0 <- with_config_dm()
+  u1 <- insert(dm0, dep)
+  expect_s4_class(u1, "InsertUpdate")
+  dm1 <- dm(u1)
+
+  expect_equal(u1@added_js, assetman:::make_asset_id(assetman:::make_dep_key(dep), "a.js"))
+  expect_equal(dm1@js_assets, u1@added_js)
+
+  u2 <- insert(dm1, dep)
+  expect_true(is_empty(u2))
+  expect_identical(dm(u2)@js_assets, dm1@js_assets)
 })
 
-test_that("insert(htmlwidget) registers its dependencies", {
-  dep <- htmltools::htmlDependency("lib", "2.0", src = "")
-  w   <- htmlwidgets::createWidget("test", x = list(), package = "htmltools")
-  # now inject it:
-  attr(w, "html_dependencies") <- list(dep)
+test_that("insert(htmlwidget) registers dependencies and copies only new assets", {
+  dm0 <- with_config_dm()
+  dep1 <- tmp_dependency(name = "lib", version = "1.0", js = c("a.js", "b.js"))
+  w <- htmlwidgets::createWidget("test", list(), package = "htmltools")
+  attr(w, "html_dependencies") <- list(dep1)
 
-  dm <- DependencyManager(w)
+  u <- insert(dm0, w)
+  dm1 <- dm(u)
 
-  expect_length(length(htmltools::htmlDependencies(w)), 1)
-
-  for (hd in htmltools::htmlDependencies(w)) {
-    expect_true(has(dm, dep_key(hd)))
-  }
+  expect_setequal(dm1@js_assets, assetman:::make_asset_id(assetman:::make_dep_key(dep1), c("a.js", "b.js")))
+  expect_true(all(file.exists(file.path(dm1@config$output_root, c("a.js", "b.js")))))
 })
 
-test_that("remove(list) handles mixed inputs", {
-  dep1 <- htmltools::htmlDependency("a", "1.0", src="")
-  dep2 <- htmltools::htmlDependency("b", "2.0", src="")
-  dep3 <- htmltools::htmlDependency("c", "3.0", src="")
+test_that("insert normalizes list input", {
+  dm0 <- with_config_dm()
+  dep1 <- tmp_dependency(name = "one", version = "1.0", css = "a.css")
+  dep2 <- tmp_dependency(name = "two", version = "1.0", js = "b.js")
 
-  w <- htmlwidgets::createWidget("t", list(), package="htmltools")
-  attr(w, "html_dependencies") <- list(dep1, dep2)
-
-  dm <- DependencyManager(list(dep3, w))
-
-  for (d in list(dep3, w)) {
-    expect_true(has(dm, d))
-  }
+  u <- insert(dm0, list(dep1, dep2))
+  dm1 <- dm(u)
+  expect_length(dm1@registry, 2)
+  expect_length(dm1@css_assets, 1)
+  expect_length(dm1@js_assets, 1)
 })

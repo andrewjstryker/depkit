@@ -1,16 +1,13 @@
-test_that("length() reflects registry", {
+test_that("length reflects registry size", {
   deps <- list(
-    htmltools::htmlDependency("a", "1.2", src=""),
-    htmltools::htmlDependency("b", "1.2", src=""),
-    htmltools::htmlDependency("c", "1.2", src="")
+    tmp_dependency(name = "a", version = "1.0"),
+    tmp_dependency(name = "b", version = "1.0")
   )
-
-  dm <- DependencyManager(deps)
-
-  expect_length(dm, length(deps))
+  dm <- dm(insert(with_config_dm(), deps))
+  expect_length(dm, 2)
 })
 
-test_that("length() handles empty registry", {
-  dm <- DependencyManager()
+test_that("length handles empty registry", {
+  dm <- with_config_dm()
   expect_length(dm, 0)
 })
