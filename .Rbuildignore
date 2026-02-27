@@ -1,0 +1,11 @@
+^\.claude$
+^\.vscode$
+^LICENSE\.md$
+^\.Rbuildignore$
+^DESIGN\.md$
+^TODO\.md$
+^Makefile$
+^_pkgdown\.yml$
+^docs$
+^files-methods\.zip$
+^files-tests\.zip$

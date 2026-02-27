@@ -1,0 +1,22 @@
+Package: depkit
+Title: Build-Time HTML Dependency Kit
+Version: 0.0.0.9000
+Authors@R:
+    person("Andrew", "Stryker", , "axs@sdf.org", role = c("aut", "cre"))
+Description: Provides a 'DependencyManager' for registering, deduplicating,
+    copying, and emitting HTML assets described by 'htmltools'/'htmlwidgets'
+    dependencies. Tracks assets as ordered unique sets, copies only newly
+    discovered files, and emits deterministic HTML snippets.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Language: en
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Imports:
+  base64enc,
+  digest,
+  htmltools,
+  openssl
+Suggests:
+  htmlwidgets,
+  testthat (>= 3.0.0)
