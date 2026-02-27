@@ -112,10 +112,32 @@ new_dependency_manager <- function(registry = list(),
 
 #' Construct a DependencyManager
 #'
+#' Creates a new dependency manager that tracks HTML dependencies, deduplicates
+#' assets, copies files to an output directory, and emits deterministic HTML
+#' tags. Use [insert()] to register dependencies and [emit_css()]/[emit_js()]
+#' to generate the corresponding HTML.
+#'
 #' @param registry Optional list of html_dependency objects to pre-register.
 #' @param output_root Filesystem root for copied assets.
 #' @param url_root Base URL for emitted assets.
-#' @param cdn_mode CDN handling mode ("off" or "verify").
+#' @param cdn_mode CDN handling mode (`"off"` or `"verify"`).
+#'
+#' @return A `dependency_manager` object.
+#'
+#' @examples
+#' dm <- DependencyManager(
+#'   output_root = tempfile("assets"),
+#'   url_root = "/static"
+#' )
+#' dep <- htmltools::htmlDependency(
+#'   "example", "1.0",
+#'   src = c(file = system.file(package = "htmltools")),
+#'   script = NULL
+#' )
+#' upd <- insert(dm, dep)
+#' dm(upd)
+#'
+#' @seealso [insert()], [has()], [remove()], [emit_css()], [emit_js()]
 #' @export
 DependencyManager <- function(registry = list(),
                               output_root = NULL,
