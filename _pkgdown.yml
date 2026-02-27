@@ -13,9 +13,12 @@ template:
 # Navbar configuration
 navbar:
   structure:
-    left: [intro, reference, news]
+    left: [intro, reference, design, news]
     right: [github]
   components:
+    design:
+      text: Design
+      href: DESIGN.html
     github:
       icon: fa-github
       href: https://github.com/andrewjstryker/depkit
