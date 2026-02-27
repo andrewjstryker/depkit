@@ -67,3 +67,70 @@ test_that("build_asset_records derives paths and urls", {
   expect_equal(recs_js[[1]]$url, "/public/rec-1.0/a.js")
   expect_equal(basename(recs_js[[1]]$dest_path), "a.js")
 })
+
+# -- dependency_source_dir with package field ---------------------------------
+
+test_that("dependency_source_dir resolves path via package field", {
+  dep <- list(
+    src = "fill",
+    package = "htmltools"
+  )
+  result <- depkit:::dependency_source_dir(dep)
+  expect_true(dir.exists(result))
+  expect_match(result, "htmltools/fill", fixed = TRUE)
+})
+
+test_that("dependency_source_dir errors for bad package path", {
+  dep <- list(
+    src = "nonexistent_dir",
+    package = "htmltools"
+  )
+  expect_error(
+    depkit:::dependency_source_dir(dep),
+    "Cannot locate dependency source directory"
+  )
+})
+
+# -- flatten_asset_spec with list-of-descriptor inputs ------------------------
+
+test_that("flatten_asset_spec handles script descriptors in a list", {
+  extractor <- function(x) {
+    fn <- x[["src"]]
+    if (is.null(fn) || !nzchar(fn)) stop("Script descriptor missing 'src'", call. = FALSE)
+    fn
+  }
+  spec <- list(list(src = "lib.js"), "app.js")
+  result <- depkit:::flatten_asset_spec(spec, extractor, "script")
+  expect_equal(result, c("lib.js", "app.js"))
+})
+
+test_that("flatten_asset_spec handles stylesheet descriptors in a list", {
+  extractor <- function(x) {
+    fn <- x[["href"]]
+    if (is.null(fn) || !nzchar(fn)) stop("Stylesheet descriptor missing 'href'", call. = FALSE)
+    fn
+  }
+  spec <- list(list(href = "style.css"), "base.css")
+  result <- depkit:::flatten_asset_spec(spec, extractor, "stylesheet")
+  expect_equal(result, c("style.css", "base.css"))
+})
+
+test_that("flatten_asset_spec handles NULL elements in a list", {
+  extractor <- function(x) x[["src"]]
+  spec <- list(NULL, list(src = "x.js"), "y.js")
+  result <- depkit:::flatten_asset_spec(spec, extractor, "script")
+  expect_equal(result, c("x.js", "y.js"))
+})
+
+test_that("flatten_asset_spec errors on descriptor missing required key", {
+  extractor <- function(x) {
+    fn <- x[["src"]]
+    if (is.null(fn) || !nzchar(fn)) stop("Script descriptor missing 'src'", call. = FALSE)
+    fn
+  }
+  spec <- list(list(href = "wrong_key.js"))
+  expect_error(
+    depkit:::flatten_asset_spec(spec, extractor, "script"),
+    "Script descriptor missing 'src'"
+  )
+})
