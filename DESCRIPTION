@@ -17,6 +17,8 @@ Imports:
   digest,
   htmltools,
   openssl
+URL: https://andrewjstryker.github.io/depkit,
+    https://github.com/andrewjstryker/depkit
 Suggests:
   htmlwidgets,
   testthat (>= 3.0.0)
