@@ -2,15 +2,15 @@ test_that("insert(html_dependency) is idempotent and returns InsertUpdate", {
   dep <- tmp_dependency(name = "lib", version = "2.0", js = "a.js")
   dm0 <- with_config_dm()
   u1 <- insert(dm0, dep)
-  expect_s4_class(u1, "InsertUpdate")
+  expect_s3_class(u1, "insert_update")
   dm1 <- dm(u1)
 
-  expect_equal(u1@added_js, assetman:::make_asset_id(assetman:::make_dep_key(dep), "a.js"))
-  expect_equal(dm1@js_assets, u1@added_js)
+  expect_equal(u1$added_js, depkit:::make_asset_id(depkit:::make_dep_key(dep), "a.js"))
+  expect_equal(dm1$js_assets, u1$added_js)
 
   u2 <- insert(dm1, dep)
   expect_true(is_empty(u2))
-  expect_identical(dm(u2)@js_assets, dm1@js_assets)
+  expect_identical(dm(u2)$js_assets, dm1$js_assets)
 })
 
 test_that("insert(htmlwidget) registers dependencies and copies only new assets", {
@@ -22,8 +22,27 @@ test_that("insert(htmlwidget) registers dependencies and copies only new assets"
   u <- insert(dm0, w)
   dm1 <- dm(u)
 
-  expect_setequal(dm1@js_assets, assetman:::make_asset_id(assetman:::make_dep_key(dep1), c("a.js", "b.js")))
-  expect_true(all(file.exists(file.path(dm1@config$output_root, c("a.js", "b.js")))))
+  expect_setequal(dm1$js_assets, depkit:::make_asset_id(depkit:::make_dep_key(dep1), c("a.js", "b.js")))
+  expect_true(all(file.exists(file.path(dm1$config$output_root, "lib-1.0", c("a.js", "b.js")))))
+})
+
+test_that("insert(InsertUpdate) chains to underlying DM", {
+  dm0 <- with_config_dm()
+  dep1 <- tmp_dependency(name = "a", version = "1.0", css = "a.css")
+  dep2 <- tmp_dependency(name = "b", version = "1.0", js = "b.js")
+
+  u1 <- insert(dm0, dep1)
+  u2 <- insert(u1, dep2)
+  expect_s3_class(u2, "insert_update")
+  dm2 <- dm(u2)
+  expect_length(dm2$registry, 2)
+  expect_length(u2$added_js, 1)
+})
+
+test_that("insert errors on unsupported types", {
+  dm0 <- with_config_dm()
+  expect_error(insert(dm0, 42), "Unsupported dependency type")
+  expect_error(insert(dm0, TRUE), "Unsupported dependency type")
 })
 
 test_that("insert normalizes list input", {
@@ -33,7 +52,7 @@ test_that("insert normalizes list input", {
 
   u <- insert(dm0, list(dep1, dep2))
   dm1 <- dm(u)
-  expect_length(dm1@registry, 2)
-  expect_length(dm1@css_assets, 1)
-  expect_length(dm1@js_assets, 1)
+  expect_length(dm1$registry, 2)
+  expect_length(dm1$css_assets, 1)
+  expect_length(dm1$js_assets, 1)
 })

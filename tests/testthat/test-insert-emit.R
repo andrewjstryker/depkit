@@ -5,17 +5,17 @@ test_that("insert registers assets and copies newly added files", {
   dep <- tmp_dependency(css = c("styles/a.css", "styles/b.css"), js = c("js/a.js"))
   update <- insert(dm, dep)
 
-  expect_s4_class(update, "InsertUpdate")
+  expect_s3_class(update, "insert_update")
   expect_false(is_empty(update))
-  expect_true(all(file.exists(file.path(out, c("styles/a.css", "styles/b.css", "js/a.js")))))
+  expect_true(all(file.exists(file.path(out, "dep-1.0", c("styles/a.css", "styles/b.css", "js/a.js")))))
 
-  dep_key <- assetman:::make_dep_key(dep)
-  expect_equal(update@added_css, assetman:::make_asset_id(dep_key, c("styles/a.css", "styles/b.css")))
-  expect_equal(update@added_js, assetman:::make_asset_id(dep_key, "js/a.js"))
+  dep_key <- depkit:::make_dep_key(dep)
+  expect_equal(update$added_css, depkit:::make_asset_id(dep_key, c("styles/a.css", "styles/b.css")))
+  expect_equal(update$added_js, depkit:::make_asset_id(dep_key, "js/a.js"))
 
   dm1 <- dm(update)
-  expect_equal(dm1@css_assets, update@added_css)
-  expect_equal(dm1@js_assets, update@added_js)
+  expect_equal(dm1$css_assets, update$added_css)
+  expect_equal(dm1$js_assets, update$added_js)
 
   css_tags <- emit_css(update)
   js_tags <- emit_js(update)
@@ -43,10 +43,10 @@ test_that("emit filters by keys in canonical order", {
   u2 <- insert(dm1, dep2)
   dm2 <- dm(u2)
 
-  expect_equal(dm2@css_assets, c(assetman:::make_asset_id(assetman:::make_dep_key(dep1), "a.css"),
-                                 assetman:::make_asset_id(assetman:::make_dep_key(dep2), c("b.css", "c.css"))))
+  expect_equal(dm2$css_assets, c(depkit:::make_asset_id(depkit:::make_dep_key(dep1), "a.css"),
+                                 depkit:::make_asset_id(depkit:::make_dep_key(dep2), c("b.css", "c.css"))))
 
-  subset_keys <- dm2@css_assets[c(3, 1)]
+  subset_keys <- dm2$css_assets[c(3, 1)]
   tags <- emit_css(dm2, keys = subset_keys)
   expect_length(tags, 2)
   expect_match(tags[[1]], "a.css")

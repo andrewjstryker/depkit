@@ -1,4 +1,7 @@
-#' @include utils.R utils-keys.R
+#' @importFrom base64enc base64encode
+#' @importFrom digest digest
+#' @importFrom openssl sha384
+#' @keywords internal
 NULL
 
 rtrim_slash <- function(x) {
@@ -122,20 +125,25 @@ cdn_entry_for <- function(dep, rel_path) {
   NULL
 }
 
+dep_subdir <- function(dep) {
+  paste0(dep$name, "-", dep$version)
+}
+
 build_asset_records <- function(dm, asset_ids, kind) {
-  assert_config_paths(dm@config)
+  assert_config_paths(dm$config)
 
   lapply(asset_ids, function(id) {
     parts <- parse_asset_id(id)
-    dep <- dm@registry[[parts$dep_key]]
+    dep <- dm$registry[[parts$dep_key]]
     if (is.null(dep)) {
       stop("Unknown dependency key: ", parts$dep_key, call. = FALSE)
     }
 
     src_dir <- dependency_source_dir(dep)
+    sub_dir <- dep_subdir(dep)
     src_path <- file.path(src_dir, parts$rel_path)
-    dest_path <- join_path(dm@config$output_root, parts$rel_path)
-    url <- paste0(rtrim_slash(dm@config$url_root), "/", parts$rel_path)
+    dest_path <- join_path(dm$config$output_root, file.path(sub_dir, parts$rel_path))
+    url <- paste0(rtrim_slash(dm$config$url_root), "/", sub_dir, "/", parts$rel_path)
 
     record <- list(
       asset_id = id,
@@ -147,7 +155,7 @@ build_asset_records <- function(dm, asset_ids, kind) {
       url = url
     )
 
-    if (identical(kind, "js") && dm@config$cdn_mode == "verify") {
+    if (identical(kind, "js") && dm$config$cdn_mode == "verify") {
       cdn_info <- cdn_entry_for(dep, parts$rel_path)
       if (!is.null(cdn_info) && length(cdn_info$url) && nzchar(cdn_info$url)) {
         record$cdn_url <- cdn_info$url

@@ -2,17 +2,17 @@ test_that("remove(character) drops entries and assets", {
   dep <- tmp_dependency(name = "rm", version = "3.0", js = "a.js")
   u <- insert(with_config_dm(), dep)
   dm1 <- dm(u)
-  key <- assetman:::make_dep_key(dep)
+  key <- depkit:::make_dep_key(dep)
   dm2 <- remove(dm1, key)
   expect_length(dm2, 0)
-  expect_equal(dm2@js_assets, character())
+  expect_equal(dm2$js_assets, character())
 })
 
 test_that("remove(html_dependency) works", {
   dep <- tmp_dependency(name = "foo", version = "4.5")
   dm1 <- dm(insert(with_config_dm(), dep))
   dm2 <- remove(dm1, dep)
-  expect_false(has(dm2, assetman:::make_dep_key(dep)))
+  expect_false(has(dm2, depkit:::make_dep_key(dep)))
 })
 
 test_that("remove(htmlwidget) removes all deps", {
@@ -40,4 +40,9 @@ test_that("remove(list) handles mixed inputs", {
 test_that("remove non-existent key errors", {
   dm <- with_config_dm()
   expect_error(remove(dm, "nope@0.1"), "not registered")
+})
+
+test_that("remove(ANY) fallback errors on unsupported type", {
+  dm <- with_config_dm()
+  expect_error(remove(dm, 42), "No remove\\(\\) method")
 })

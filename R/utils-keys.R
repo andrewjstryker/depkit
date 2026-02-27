@@ -1,6 +1,3 @@
-#' @include utils.R
-NULL
-
 make_dep_key <- function(dep) {
   if (!inherits(dep, "html_dependency")) {
     stop("Expected html_dependency", call. = FALSE)

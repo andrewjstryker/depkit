@@ -1,4 +1,4 @@
 library(testthat)
-library(assetman)
+library(depkit)
 
-test_check("assetman")
+test_check("depkit")
