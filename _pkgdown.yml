@@ -12,39 +12,22 @@ template:
 
 # Navbar configuration
 navbar:
-  title: depkit
-  left:
-    - home
-    - reference
-    - articles
-    - news
-  right:
-    - icon: font-awesome brands github
+  structure:
+    left: [intro, reference, news]
+    right: [github]
+  components:
+    github:
+      icon: fa-github
       href: https://github.com/andrewjstryker/depkit
+      aria-label: GitHub repository
 
 # Home page settings
 home:
   title: depkit
   subtitle: "Build-time HTML dependency kit"
-  contents: |
-    **depkit** provides an S4 class `DependencyManager` for registering,
-    querying, and emitting HTML dependency assets with deterministic ordering.
 
 # Reference (function docs) section
 reference:
   - title: "API Reference"
-    contents: |
-      All exported functions and methods for depkit.
-
-# Articles (vignettes) section
-articles:
-  - title: "vignettes"
-    contents: vignettes
-
-# News section (if you maintain a NEWS.md)
-news:
-  contents: NEWS.md
-
-# Uncomment and adjust if you have a logo or favicon
-# logo: man/figures/logo.png
-# favicon: man/figures/favicon.ico
+    contents:
+      - starts_with("")
