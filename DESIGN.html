@@ -203,8 +203,8 @@
 <div class="section level3">
 <h3 id="emission-via-insertupdate-new-only">Emission via InsertUpdate (new-only)<a class="anchor" aria-label="anchor" href="#emission-via-insertupdate-new-only"></a></h3>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">u</span> <span class="op">&lt;-</span> <span class="fu">insert</span><span class="op">(</span><span class="va">dm</span>, <span class="va">widget</span><span class="op">)</span></span>
-<span><span class="va">html</span> <span class="op">&lt;-</span> <span class="fu">emit_css</span><span class="op">(</span><span class="va">u</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">u</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/insert.html">insert</a></span><span class="op">(</span><span class="va">dm</span>, <span class="va">widget</span><span class="op">)</span></span>
+<span><span class="va">html</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/emit_css.html">emit_css</a></span><span class="op">(</span><span class="va">u</span><span class="op">)</span></span></code></pre></div>
 <ul><li>Emits snippets <strong>only for newly added assets</strong>
 </li>
 <li>Implemented by calling DM emission with <code>keys = added_asset_ids</code>
@@ -214,8 +214,8 @@
 <div class="section level3">
 <h3 id="emission-via-dependencymanager-all-assets">Emission via DependencyManager (all assets)<a class="anchor" aria-label="anchor" href="#emission-via-dependencymanager-all-assets"></a></h3>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">html_css</span> <span class="op">&lt;-</span> <span class="fu">emit_css</span><span class="op">(</span><span class="va">dm</span><span class="op">)</span></span>
-<span><span class="va">html_js</span>  <span class="op">&lt;-</span> <span class="fu">emit_js</span><span class="op">(</span><span class="va">dm</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">html_css</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/emit_css.html">emit_css</a></span><span class="op">(</span><span class="va">dm</span><span class="op">)</span></span>
+<span><span class="va">html_js</span>  <span class="op">&lt;-</span> <span class="fu"><a href="reference/emit_js.html">emit_js</a></span><span class="op">(</span><span class="va">dm</span><span class="op">)</span></span></code></pre></div>
 <ul><li>Emits all assets of the given type</li>
 <li>Preserves first-seen order</li>
 <li>No deduplication logic required at emit time</li>
