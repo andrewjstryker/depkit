@@ -8,7 +8,7 @@ DependencyManager(
   registry = list(),
   output_root = NULL,
   url_root = NULL,
-  cdn_mode = "off"
+  cdn = FALSE
 )
 }
 \arguments{
@@ -18,7 +18,9 @@ DependencyManager(
 
 \item{url_root}{Base URL for emitted assets.}
 
-\item{cdn_mode}{CDN handling mode (\code{"off"} or \code{"verify"}).}
+\item{cdn}{Logical; enable automatic CDN resolution via jsDelivr (\code{FALSE}
+by default). When \code{TRUE}, JS assets are checked against jsDelivr by hash
+and emitted with CDN URLs, SRI integrity, and local fallback.}
 }
 \value{
 A \code{dependency_manager} object.

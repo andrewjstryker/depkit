@@ -61,7 +61,7 @@ emit_css <- function(x, keys = NULL) UseMethod("emit_css")
 #' Emit JS script tags
 #'
 #' Generates `<script>` HTML tags for registered JavaScript assets. When
-#' CDN mode is `"verify"`, tags include `integrity` and `crossorigin`
+#' CDN is enabled (`cdn = TRUE`), tags include `integrity` and `crossorigin`
 #' attributes with a local fallback.
 #'
 #' @param x A dependency_manager or insert_update.

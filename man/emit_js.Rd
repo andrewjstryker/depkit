@@ -16,7 +16,7 @@ Character vector of HTML \verb{<script>} tags, one per JS asset.
 }
 \description{
 Generates \verb{<script>} HTML tags for registered JavaScript assets. When
-CDN mode is \code{"verify"}, tags include \code{integrity} and \code{crossorigin}
+CDN is enabled (\code{cdn = TRUE}), tags include \code{integrity} and \code{crossorigin}
 attributes with a local fallback.
 }
 \seealso{

@@ -4,7 +4,7 @@ test_that("DependencyManager defaults are valid and empty", {
   expect_equal(length(dm$registry), 0)
   expect_equal(dm$css_assets, character())
   expect_equal(dm$js_assets, character())
-  expect_equal(dm$config$cdn_mode, "off")
+  expect_false(dm$config$cdn)
 })
 
 test_that("DependencyManager validates registry names and types", {
@@ -20,17 +20,21 @@ test_that("DependencyManager validates registry names and types", {
   expect_error(depkit:::new_dependency_manager(registry = non_dep), "html_dependency")
 })
 
-test_that("DependencyManager rejects invalid cdn_mode", {
+test_that("DependencyManager rejects invalid cdn value", {
   expect_error(
-    DependencyManager(cdn_mode = "bogus"),
-    "cdn_mode"
+    DependencyManager(cdn = "bogus"),
+    "cdn must be a scalar logical"
+  )
+  expect_error(
+    DependencyManager(cdn = NA),
+    "cdn must be a scalar logical"
   )
 })
 
 test_that("DependencyManager rejects vector-length config paths", {
   expect_error(
     depkit:::new_dependency_manager(config = list(
-      output_root = c("/a", "/b"), url_root = "/x", cdn_mode = "off"
+      output_root = c("/a", "/b"), url_root = "/x", cdn = FALSE
     )),
     "length-1"
   )

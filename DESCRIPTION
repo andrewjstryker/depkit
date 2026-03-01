@@ -16,9 +16,13 @@ Imports:
   base64enc,
   digest,
   htmltools,
+  httr2,
   openssl
 URL: https://andrewjstryker.github.io/depkit,
     https://github.com/andrewjstryker/depkit
 Suggests:
   htmlwidgets,
+  knitr,
+  rmarkdown,
   testthat (>= 3.0.0)
+VignetteBuilder: knitr

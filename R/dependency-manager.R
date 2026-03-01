@@ -9,7 +9,7 @@ NULL
     list(
       output_root = character(),
       url_root = character(),
-      cdn_mode = "off"
+      cdn = FALSE
     ),
     config
   )
@@ -59,11 +59,8 @@ NULL
   if (!is.list(cfg)) {
     return("config must be a list")
   }
-  if (is.null(cfg$cdn_mode) || length(cfg$cdn_mode) != 1) {
-    return("config$cdn_mode must be length-1 character")
-  }
-  if (!cfg$cdn_mode %in% c("off", "verify")) {
-    return("config$cdn_mode must be one of 'off' or 'verify'")
+  if (!is.logical(cfg$cdn) || length(cfg$cdn) != 1L || is.na(cfg$cdn)) {
+    return("config$cdn must be a scalar logical (TRUE or FALSE)")
   }
   if (length(cfg$output_root) > 1 || length(cfg$url_root) > 1) {
     return("config$output_root and config$url_root must be length-1 if provided")
@@ -86,6 +83,10 @@ validate_dependency_manager <- function(x) {
   cfg_check <- .valid_config(x$config)
   if (!isTRUE(cfg_check)) messages <- c(messages, cfg_check)
 
+  if (!is.list(x$cdn_cache)) {
+    messages <- c(messages, "cdn_cache must be a list")
+  }
+
   if (length(messages)) stop(paste(messages, collapse = "; "), call. = FALSE)
   invisible(x)
 }
@@ -95,14 +96,16 @@ validate_dependency_manager <- function(x) {
 new_dependency_manager <- function(registry = list(),
                                    css_assets = character(),
                                    js_assets = character(),
-                                   config = list()) {
+                                   config = list(),
+                                   cdn_cache = list()) {
   cfg <- .dm_config_defaults(config)
   obj <- structure(
     list(
       registry = registry,
       css_assets = css_assets,
       js_assets = js_assets,
-      config = cfg
+      config = cfg,
+      cdn_cache = cdn_cache
     ),
     class = "dependency_manager"
   )
@@ -120,7 +123,9 @@ new_dependency_manager <- function(registry = list(),
 #' @param registry Optional list of html_dependency objects to pre-register.
 #' @param output_root Filesystem root for copied assets.
 #' @param url_root Base URL for emitted assets.
-#' @param cdn_mode CDN handling mode (`"off"` or `"verify"`).
+#' @param cdn Logical; enable automatic CDN resolution via jsDelivr (`FALSE`
+#'   by default). When `TRUE`, JS assets are checked against jsDelivr by hash
+#'   and emitted with CDN URLs, SRI integrity, and local fallback.
 #'
 #' @return A `dependency_manager` object.
 #'
@@ -142,12 +147,12 @@ new_dependency_manager <- function(registry = list(),
 DependencyManager <- function(registry = list(),
                               output_root = NULL,
                               url_root = NULL,
-                              cdn_mode = "off") {
+                              cdn = FALSE) {
   config <- .dm_config_defaults(
     list(
       output_root = output_root %||% character(),
       url_root = url_root %||% character(),
-      cdn_mode = cdn_mode %||% "off"
+      cdn = cdn
     )
   )
 
@@ -210,7 +215,8 @@ append_assets <- function(dm, css_ids, js_ids, registry) {
     registry = registry,
     css_assets = css_res$updated,
     js_assets = js_res$updated,
-    config = dm$config
+    config = dm$config,
+    cdn_cache = dm$cdn_cache
   )
 
   list(
@@ -261,6 +267,11 @@ insert_impl <- function(dm, dep) {
     copy_assets_for_ids(res$dm, res$added_js, "js")
   }
 
+  # CDN resolution (best-effort, JS only)
+  if (isTRUE(res$dm$config$cdn) && length(res$added_js)) {
+    res$dm <- resolve_and_annotate(res$dm, deps)
+  }
+
   InsertUpdate(res$dm, added_css = res$added_css, added_js = res$added_js)
 }
 
@@ -289,11 +300,13 @@ remove.dependency_manager <- function(x, dep) {
     css_drop <- ordered_unique(unlist(lapply(deps_objects, function(d) collect_asset_ids(d)$css_ids), use.names = FALSE))
     js_drop  <- ordered_unique(unlist(lapply(deps_objects, function(d) collect_asset_ids(d)$js_ids), use.names = FALSE))
 
+    cdn_keep <- x$cdn_cache[!names(x$cdn_cache) %in% js_drop]
     return(new_dependency_manager(
       registry = x$registry[!names(x$registry) %in% dep],
       css_assets = x$css_assets[!x$css_assets %in% css_drop],
       js_assets = x$js_assets[!x$js_assets %in% js_drop],
-      config = x$config
+      config = x$config,
+      cdn_cache = cdn_keep
     ))
   }
   if (inherits(dep, "html_dependency")) {
@@ -401,7 +414,8 @@ names.dependency_manager <- function(x) {
     registry = reg,
     css_assets = x$css_assets,
     js_assets = x$js_assets,
-    config = x$config
+    config = x$config,
+    cdn_cache = x$cdn_cache
   )
 }
 

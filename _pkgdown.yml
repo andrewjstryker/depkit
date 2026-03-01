@@ -31,6 +31,23 @@ home:
 
 # Reference (function docs) section
 reference:
-  - title: "API Reference"
+  - title: "Constructor"
+    desc: Create a new dependency manager.
     contents:
-      - starts_with("")
+      - DependencyManager
+  - title: "Manage dependencies"
+    desc: Register, query, and remove dependencies.
+    contents:
+      - insert
+      - has
+      - remove
+  - title: "Emit HTML"
+    desc: Generate HTML tags for registered assets.
+    contents:
+      - emit_css
+      - emit_js
+  - title: "InsertUpdate helpers"
+    desc: Work with the result of an insert() call.
+    contents:
+      - dm
+      - is_empty

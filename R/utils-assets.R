@@ -108,23 +108,6 @@ compute_sri_hash <- function(path, algo = "sha384") {
   paste0(algo, "-", base64enc::base64encode(hash_raw))
 }
 
-cdn_entry_for <- function(dep, rel_path) {
-  meta <- dep$meta %||% list()
-  cdn <- meta$cdn %||% NULL
-  if (is.null(cdn)) return(NULL)
-  entry <- cdn[[rel_path]] %||% cdn[[basename(rel_path)]] %||% cdn
-  if (is.character(entry)) {
-    return(list(url = entry))
-  }
-  if (is.list(entry)) {
-    url <- entry$url %||% entry$href
-    integ <- entry$integrity %||% NULL
-    fallback <- entry$fallback_url %||% entry$fallback
-    return(list(url = url, integrity = integ, fallback_url = fallback))
-  }
-  NULL
-}
-
 dep_subdir <- function(dep) {
   paste0(dep$name, "-", dep$version)
 }
@@ -155,12 +138,12 @@ build_asset_records <- function(dm, asset_ids, kind) {
       url = url
     )
 
-    if (identical(kind, "js") && dm$config$cdn_mode == "verify") {
-      cdn_info <- cdn_entry_for(dep, parts$rel_path)
-      if (!is.null(cdn_info) && length(cdn_info$url) && nzchar(cdn_info$url)) {
-        record$cdn_url <- cdn_info$url
-        record$integrity <- cdn_info$integrity %||% compute_sri_hash(src_path)
-        record$fallback_url <- cdn_info$fallback_url %||% url
+    if (identical(kind, "js") && isTRUE(dm$config$cdn)) {
+      cached <- dm$cdn_cache[[id]]
+      if (!is.null(cached)) {
+        record$cdn_url <- cached$cdn_url
+        record$integrity <- cached$integrity
+        record$fallback_url <- url
       }
     }
 

@@ -140,7 +140,7 @@ Configuration is stored on the DM and applies uniformly:
 
 * `output_root` — filesystem directory for copied assets
 * `url_root` — URL prefix used in emitted tags
-* `cdn_mode` — `"off"` or `"verify"` (JavaScript only)
+* `cdn` — logical; automatic CDN resolution via jsDelivr (JavaScript only)
 
 Configuration affects copying and emission, but is **not stateful** in the sense of “prepared” or “emitted”.
 
@@ -244,12 +244,11 @@ Common:
 * `out_path`
 * `url`
 
-JavaScript only (when `cdn_mode = "verify"`):
+JavaScript only (when `cdn = TRUE`):
 
-* `cdn_url` (optional)
-* `integrity` (sha384)
+* `cdn_url` (optional, resolved automatically via jsDelivr)
+* `integrity` (sha384, SRI hash)
 * `fallback_url`
-* `verified` flag
 
 Records are derived deterministically from:
 
@@ -272,14 +271,15 @@ Records are derived deterministically from:
 
 ### JavaScript
 
-* `cdn_mode = "off"`
+* `cdn = FALSE`
 
   * Emit local `<script src="URL"></script>`
 
-* `cdn_mode = "verify"`
+* `cdn = TRUE`
 
-  * Verify CDN content matches local bytes
-  * If verified:
+  * At insert time, query jsDelivr API for the npm package matching the dependency name and version
+  * Hash-match local JS files against jsDelivr's file listing
+  * If matched:
 
 ```html
 <script src="CDN_URL"
@@ -289,7 +289,7 @@ Records are derived deterministically from:
 </script>
 ```
 
-* If verification fails: emit local-only
+* If no match or any error: silently emit local-only
 
 ---
 

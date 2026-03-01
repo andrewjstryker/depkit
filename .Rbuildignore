@@ -9,3 +9,5 @@
 ^docs$
 ^files-methods\.zip$
 ^files-tests\.zip$
+^doc$
+^Meta$

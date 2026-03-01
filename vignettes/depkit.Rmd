@@ -1,0 +1,180 @@
+---
+title: "Getting started with depkit"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with depkit}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+depkit is build-time plumbing for R packages and pipelines that generate HTML
+documents containing widgets. It manages the CSS and JavaScript files that
+htmlwidgets and htmltools dependencies carry — deduplicating shared libraries,
+copying files to an output directory, and emitting deterministic `<link>` and
+`<script>` tags.
+
+depkit does not write HTML documents or decide where tags go. It produces
+snippets; your site generator or document builder decides the layout.
+
+## Core API
+
+### Create a dependency manager
+
+A `DependencyManager` needs an output directory for copied assets and a URL
+prefix for emitted tags. These correspond to your build pipeline's static
+asset directory and how it's served.
+
+```{r create}
+library(depkit)
+
+dm <- DependencyManager(
+  output_root = tempfile("assets"),
+  url_root = "/static"
+)
+dm
+```
+
+### Insert dependencies
+
+`insert()` accepts `html_dependency` objects, htmlwidgets, or lists of either.
+It returns an `InsertUpdate` — a delta that records what was newly added.
+
+```{r insert}
+# Create two sample dependencies (standing in for real widget deps)
+src1 <- tempfile("dep1")
+dir.create(src1)
+writeLines("body { margin: 0; }", file.path(src1, "reset.css"))
+writeLines("console.log('app');", file.path(src1, "app.js"))
+
+src2 <- tempfile("dep2")
+dir.create(src2)
+writeLines("console.log('utils');", file.path(src2, "utils.js"))
+
+dep1 <- htmltools::htmlDependency(
+  "my-app", "1.0", src = c(file = src1),
+  stylesheet = "reset.css", script = "app.js"
+)
+dep2 <- htmltools::htmlDependency(
+  "my-utils", "0.5", src = c(file = src2),
+  script = "utils.js"
+)
+
+u <- insert(dm, dep1)
+u
+```
+
+Use `dm()` to extract the updated manager for subsequent inserts:
+
+```{r chain}
+dm <- dm(u)
+u <- insert(dm, dep2)
+dm <- dm(u)
+dm
+```
+
+### Deduplication
+
+Inserting the same dependency again is a no-op. This is the key property
+that makes depkit useful — multiple widgets can declare overlapping
+dependencies and depkit ensures each is registered exactly once.
+
+```{r dedup}
+u <- insert(dm, dep1)
+is_empty(u)
+```
+
+### Emit HTML tags
+
+`emit_css()` and `emit_js()` generate HTML snippets. Called on a manager, they
+emit tags for all registered assets. Called on an `InsertUpdate`, they emit
+tags for only what was newly added.
+
+```{r emit}
+# All registered CSS
+cat(emit_css(dm), sep = "\n")
+
+# All registered JS
+cat(emit_js(dm), sep = "\n")
+```
+
+### Query and remove
+
+```{r query}
+has(dm, "my-app@1.0")
+names(dm)
+length(dm)
+```
+
+```{r remove}
+dm_reduced <- remove(dm, "my-utils@0.5")
+names(dm_reduced)
+```
+
+## Using depkit in a build pipeline
+
+The API above is designed to be called from a page builder function, not
+interactively. Here's a sketch of how a site generator might use depkit to
+process a list of widgets into a page:
+
+```{r pipeline}
+build_page <- function(widgets, output_dir) {
+  dm <- DependencyManager(
+    output_root = file.path(output_dir, "assets"),
+    url_root = "/assets"
+  )
+
+  head_css <- character()
+
+  for (w in widgets) {
+    u <- insert(dm, w)
+    head_css <- c(head_css, emit_css(u))
+    dm <- dm(u)
+  }
+
+  footer_js <- emit_js(dm)
+
+  list(head_css = head_css, footer_js = footer_js)
+}
+
+# Example: two widgets with overlapping dependencies
+result <- build_page(list(dep1, dep2), tempfile("site"))
+cat("<!-- <head> -->\n")
+cat(result$head_css, sep = "\n")
+cat("\n<!-- end of <body> -->\n")
+cat(result$footer_js, sep = "\n")
+```
+
+CSS goes in the `<head>`, JS goes at the end of the `<body>`. Shared
+dependencies (if dep1 and dep2 declared any) would appear only once.
+
+## CDN support
+
+Set `cdn = TRUE` to automatically resolve JavaScript assets against
+[jsDelivr](https://www.jsdelivr.com/). depkit hashes each local JS file and
+looks for a match in the jsDelivr package listing. When found, the emitted
+`<script>` tag uses the CDN URL with
+[subresource integrity](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity)
+and a local fallback:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/pkg@1.0/dist/lib.min.js"
+        integrity="sha384-..."
+        crossorigin="anonymous"
+        onerror="this.onerror=null;this.src='/assets/pkg-1.0/lib.min.js';">
+</script>
+```
+
+This is best-effort: any failure (network error, 404, hash mismatch) silently
+falls back to a local-only tag. No configuration of CDN URLs is required.
+
+```{r cdn, eval = FALSE}
+dm <- DependencyManager(
+  output_root = "public/assets",
+  url_root = "/assets",
+  cdn = TRUE
+)
+```
