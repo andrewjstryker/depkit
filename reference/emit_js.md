@@ -1,8 +1,8 @@
 # Emit JS script tags
 
 Generates `<script>` HTML tags for registered JavaScript assets. When
-CDN mode is `"verify"`, tags include `integrity` and `crossorigin`
-attributes with a local fallback.
+CDN is enabled (`cdn = TRUE`), tags include `integrity` and
+`crossorigin` attributes with a local fallback.
 
 ## Usage
 

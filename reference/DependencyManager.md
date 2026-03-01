@@ -15,7 +15,7 @@ DependencyManager(
   registry = list(),
   output_root = NULL,
   url_root = NULL,
-  cdn_mode = "off"
+  cdn = FALSE
 )
 ```
 
@@ -33,9 +33,11 @@ DependencyManager(
 
   Base URL for emitted assets.
 
-- cdn_mode:
+- cdn:
 
-  CDN handling mode (`"off"` or `"verify"`).
+  Logical; enable automatic CDN resolution via jsDelivr (`FALSE` by
+  default). When `TRUE`, JS assets are checked against jsDelivr by hash
+  and emitted with CDN URLs, SRI integrity, and local fallback.
 
 ## Value
 

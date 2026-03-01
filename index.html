@@ -31,6 +31,7 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
+<li class="nav-item"><a class="nav-link" href="articles/depkit.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="DESIGN.html">Design</a></li>
       </ul>
@@ -46,36 +47,106 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="depkit">depkit<a class="anchor" aria-label="anchor" href="#depkit"></a>
 </h1></div>
-<p><strong>depkit</strong> is a build-time HTML dependency kit for R. It tracks css/js assets as ordered unique sets, copies newly discovered files, and emits deterministic <code>&lt;link&gt;</code> / <code>&lt;script&gt;</code> snippets derived from dependency metadata.</p>
+<p><strong>depkit</strong> is build-time plumbing for R packages that generate static HTML pages containing htmlwidgets. It manages the CSS and JavaScript dependencies those widgets carry — deduplicating shared libraries, copying files to an output directory, and emitting production-quality HTML tags.</p>
 <div class="section level2">
-<h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
+<h2 id="why-not-just-use-htmltools">Why not just use htmltools?<a class="anchor" aria-label="anchor" href="#why-not-just-use-htmltools"></a>
+</h2>
+<p>htmltools provides <a href="https://rstudio.github.io/htmltools/reference/renderDependencies.html" class="external-link"><code>renderDependencies()</code></a> and <a href="https://rstudio.github.io/htmltools/reference/copyDependencyToDir.html" class="external-link"><code>copyDependencyToDir()</code></a>, which handle dependency rendering and file copying. These work well inside Shiny and R Markdown, where the runtime manages the full document lifecycle.</p>
+<p>For static site generation — blog engines, custom document pipelines, Hugo post-processing — the requirements are different:</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th></th>
+<th>htmltools</th>
+<th>depkit</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><strong>Insertion model</strong></td>
+<td>Batch: pass a complete list, get results</td>
+<td>Incremental: insert widgets one at a time, emit deltas as you go</td>
+</tr>
+<tr class="even">
+<td><strong>CDN delivery</strong></td>
+<td>No</td>
+<td>Automatic via jsDelivr, verified by hash</td>
+</tr>
+<tr class="odd">
+<td><strong>Subresource integrity</strong></td>
+<td>No</td>
+<td>SRI hashes on all CDN tags</td>
+</tr>
+<tr class="even">
+<td><strong>Local fallback</strong></td>
+<td>N/A</td>
+<td>
+<code>onerror</code> fallback on every CDN tag</td>
+</tr>
+<tr class="odd">
+<td><strong>State management</strong></td>
+<td>Stateless functions</td>
+<td>Persistent manager object that threads through a build pipeline</td>
+</tr>
+</tbody>
+</table>
+<p>depkit accepts the same <code>html_dependency</code> objects and htmlwidgets that htmltools does. It’s a narrow package that handles one concern — asset management for static HTML — and produces <code>&lt;script&gt;</code> tags with CDN URLs, SRI integrity, and local fallback that htmltools has no mechanism to generate.</p>
+</div>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://andrewjstryker.github.io/depkit">depkit</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
+<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"andrewjstryker/depkit"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="example-a-page-builder">Example: a page builder<a class="anchor" aria-label="anchor" href="#example-a-page-builder"></a>
+</h2>
+<p>depkit is designed as plumbing for site generators and document pipelines. Here’s a sketch of how a page builder might use it:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">build_page</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">widgets</span>, <span class="va">output_dir</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">dm</span> <span class="op">&lt;-</span> <span class="fu">depkit</span><span class="fu">::</span><span class="fu"><a href="reference/DependencyManager.html">DependencyManager</a></span><span class="op">(</span></span>
+<span>    output_root <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">output_dir</span>, <span class="st">"assets"</span><span class="op">)</span>,</span>
+<span>    url_root <span class="op">=</span> <span class="st">"/assets"</span>,</span>
+<span>    cdn <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span></span>
 <span></span>
-<span><span class="va">dm</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/DependencyManager.html">DependencyManager</a></span><span class="op">(</span></span>
-<span>  output_root <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="st">"asset-output"</span><span class="op">)</span>,</span>
-<span>  url_root <span class="op">=</span> <span class="st">"/assets"</span></span>
-<span><span class="op">)</span></span>
+<span>  <span class="va">body_html</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="va">head_css</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">dep</span> <span class="op">&lt;-</span> <span class="fu">htmltools</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/htmltools/reference/htmlDependency.html" class="external-link">htmlDependency</a></span><span class="op">(</span></span>
-<span>  name <span class="op">=</span> <span class="st">"demo"</span>,</span>
-<span>  version <span class="op">=</span> <span class="st">"1.0.0"</span>,</span>
-<span>  src <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>file <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"www"</span>, package <span class="op">=</span> <span class="st">"htmlwidgets"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  script <span class="op">=</span> <span class="st">"htmlwidgets.js"</span>,</span>
-<span>  stylesheet <span class="op">=</span> <span class="st">"htmlwidgets.css"</span></span>
-<span><span class="op">)</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">w</span> <span class="kw">in</span> <span class="va">widgets</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">u</span> <span class="op">&lt;-</span> <span class="fu">depkit</span><span class="fu">::</span><span class="fu"><a href="reference/insert.html">insert</a></span><span class="op">(</span><span class="va">dm</span>, <span class="va">w</span><span class="op">)</span></span>
+<span>    <span class="va">head_css</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">head_css</span>, <span class="fu">depkit</span><span class="fu">::</span><span class="fu"><a href="reference/emit_css.html">emit_css</a></span><span class="op">(</span><span class="va">u</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="va">body_html</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">body_html</span>, <span class="fu">render_widget_html</span><span class="op">(</span><span class="va">w</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="va">dm</span> <span class="op">&lt;-</span> <span class="fu">depkit</span><span class="fu">::</span><span class="fu"><a href="reference/dm.html">dm</a></span><span class="op">(</span><span class="va">u</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
 <span></span>
-<span><span class="va">u</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/insert.html">insert</a></span><span class="op">(</span><span class="va">dm</span>, <span class="va">dep</span><span class="op">)</span></span>
+<span>  <span class="va">footer_js</span> <span class="op">&lt;-</span> <span class="fu">depkit</span><span class="fu">::</span><span class="fu"><a href="reference/emit_js.html">emit_js</a></span><span class="op">(</span><span class="va">dm</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># emit only newly added assets</span></span>
-<span><span class="fu"><a href="reference/emit_css.html">emit_css</a></span><span class="op">(</span><span class="va">u</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/emit_js.html">emit_js</a></span><span class="op">(</span><span class="va">u</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># emit all known assets</span></span>
-<span><span class="fu"><a href="reference/emit_css.html">emit_css</a></span><span class="op">(</span><span class="fu"><a href="reference/dm.html">dm</a></span><span class="op">(</span><span class="va">u</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/emit_js.html">emit_js</a></span><span class="op">(</span><span class="fu"><a href="reference/dm.html">dm</a></span><span class="op">(</span><span class="va">u</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>Insert always returns an <code>InsertUpdate</code> delta; emission is pure and stateless.</p>
+<span>  <span class="co"># Assemble the page — depkit provides the snippets, you decide the layout</span></span>
+<span>  <span class="fu">write_html</span><span class="op">(</span><span class="va">output_dir</span>, head_css <span class="op">=</span> <span class="va">head_css</span>,</span>
+<span>             body <span class="op">=</span> <span class="va">body_html</span>, footer_js <span class="op">=</span> <span class="va">footer_js</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>Each widget’s dependencies are deduplicated automatically. Shared libraries like jQuery are registered once and emitted once, regardless of how many widgets use them.</p>
+</div>
+<div class="section level2">
+<h2 id="cdn-support">CDN support<a class="anchor" aria-label="anchor" href="#cdn-support"></a>
+</h2>
+<p>With <code>cdn = TRUE</code>, depkit checks each JS file against <a href="https://www.jsdelivr.com/" class="external-link">jsDelivr</a> by hash. When a match is found, the emitted tag uses the CDN URL with <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity" class="external-link">subresource integrity</a> and a local fallback:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">script</span> <span class="er">src</span><span class="ot">=</span><span class="st">"https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="ot">        integrity=</span><span class="st">"sha384-ZvpUoO/..."</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="ot">        crossorigin=</span><span class="st">"anonymous"</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="ot">        onerror=</span><span class="st">"this.onerror=null;this.src='/assets/jquery-3.5.1/jquery.min.js';"</span><span class="dt">&gt;</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">script</span><span class="dt">&gt;</span></span></code></pre></div>
+<p>No configuration of CDN URLs is required. Any failure — network error, 404, hash mismatch — silently falls back to a local-only tag.</p>
+</div>
+<div class="section level2">
+<h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
+</h2>
+<p>MIT</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
